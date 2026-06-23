@@ -1,0 +1,46 @@
+################################################################################
+# Cronmanager MCP Server – docker-compose.yml
+#
+# Quick start:
+#   cp .env.example .env   # then fill in CM_BASE_URL, CM_API_KEY, MCP_AUTH_TOKEN
+#   docker compose up -d
+#
+# Traefik users: uncomment the Traefik labels below and add the traefik-proxy
+# network section.  Also remove (or comment out) the ports mapping so that
+# Traefik is the only entry point.
+#
+# @author  Christian Schulz <technik@meinetechnikwelt.rocks>
+# @license GNU General Public License version 3 or later
+################################################################################
+
+services:
+  cronmanager-mcp:
+    image: cs1711/cronmanager-mcp:latest
+    container_name: cronmanager-mcp
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "3000:3000"
+    labels:
+      - "com.centurylinklabs.watchtower.scope=doupdate"
+      # ── Traefik (optional) ──────────────────────────────────────────────────
+      # Uncomment the lines below to expose this service via Traefik.
+      # Replace cronmanager-mcp.example.com with your actual hostname and
+      # <your-certresolver> with the name of your configured cert resolver.
+      # When using Traefik, also comment out the ports section above and
+      # add the traefik-proxy network to the networks list below.
+      #
+      # - "traefik.enable=true"
+      # - "traefik.http.routers.cronmanagermcp.rule=Host(`cronmanager-mcp.example.com`)"
+      # - "traefik.http.routers.cronmanagermcp.tls=true"
+      # - "traefik.http.routers.cronmanagermcp.tls.certresolver=<your-certresolver>"
+      # - "traefik.http.services.cronmanagermcp.loadbalancer.server.port=3000"
+    networks:
+      - cronmanager-mcp-net
+      # - traefik-proxy   # uncomment when using Traefik
+
+networks:
+  cronmanager-mcp-net:
+    driver: bridge
+  # traefik-proxy:       # uncomment when using Traefik
+  #   external: true
