@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-23
+
+### Fixed
+- MCP session not registered after `initialize`: switched to `onsessioninitialized` callback so the session is stored at the correct point in the SDK lifecycle
+- TLS verification failure against private CAs (e.g. stepca): added `CM_INSECURE_TLS=true` option (`NODE_TLS_REJECT_UNAUTHORIZED=0`) and documented `NODE_EXTRA_CA_CERTS` as the recommended alternative
+
 ## [0.1.0] - 2026-06-23
 
 ### Added
