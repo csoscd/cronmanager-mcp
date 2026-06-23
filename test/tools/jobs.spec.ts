@@ -54,7 +54,7 @@ describe('job tools', () => {
       const handler = handlers.get('list_jobs')!;
       const result = await handler({ tag: 'backup', limit: 10 }) as { content: [{ text: string }] };
 
-      expect(apiMock['get']).toHaveBeenCalledWith('/jobs', expect.objectContaining({ tag: 'backup', limit: 10 }));
+      expect(apiMock['get']).toHaveBeenCalledWith('/jobs', expect.objectContaining({ tag: 'backup', limit: 10 }), undefined);
       expect(result.content[0]?.text).toContain('/backup.sh');
       expect(result).not.toHaveProperty('isError');
     });
@@ -82,7 +82,7 @@ describe('job tools', () => {
       const handler = handlers.get('get_job')!;
       const result = await handler({ id: 42 }) as { content: [{ text: string }] };
 
-      expect(apiMock['get']).toHaveBeenCalledWith('/jobs/42');
+      expect(apiMock['get']).toHaveBeenCalledWith('/jobs/42', undefined, undefined);
       expect(result.content[0]?.text).toContain('/deploy.sh');
     });
   });
@@ -96,7 +96,7 @@ describe('job tools', () => {
       const payload = { linux_user: 'deploy', schedule: '0 3 * * *', command: '/backup.sh', targets: ['local'] };
       await handler(payload);
 
-      expect(apiMock['post']).toHaveBeenCalledWith('/jobs', expect.objectContaining(payload));
+      expect(apiMock['post']).toHaveBeenCalledWith('/jobs', expect.objectContaining(payload), undefined);
     });
   });
 
@@ -107,8 +107,8 @@ describe('job tools', () => {
       const handler = handlers.get('update_job')!;
       await handler({ id: 5, active: false });
 
-      expect(apiMock['put']).toHaveBeenCalledWith('/jobs/5', expect.not.objectContaining({ id: 5 }));
-      expect(apiMock['put']).toHaveBeenCalledWith('/jobs/5', expect.objectContaining({ active: false }));
+      expect(apiMock['put']).toHaveBeenCalledWith('/jobs/5', expect.not.objectContaining({ id: 5 }), undefined);
+      expect(apiMock['put']).toHaveBeenCalledWith('/jobs/5', expect.objectContaining({ active: false }), undefined);
     });
   });
 
@@ -119,7 +119,7 @@ describe('job tools', () => {
       const handler = handlers.get('delete_job')!;
       await handler({ id: 5, confirm: true });
 
-      expect(apiMock['delete']).toHaveBeenCalledWith('/jobs/5');
+      expect(apiMock['delete']).toHaveBeenCalledWith('/jobs/5', undefined);
     });
   });
 

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `list_agents` tool: list all configured Cronmanager agents (`GET /api/v1/agents`, requires `settings:read` scope)
+- `agent_id` optional parameter on all tools to target a specific agent per call (overrides the global `CM_AGENT_ID` environment variable)
+
 ## [0.1.1] - 2026-06-23
 
 ### Fixed

@@ -8,6 +8,9 @@ import { z } from 'zod';
 import { apiClient } from '../apiClient.js';
 import { okText, fail } from '../toolHelpers.js';
 
+const agentId = z.number().int().positive().optional()
+  .describe('Target a specific agent (multi-agent setup). Omit to use the default agent.');
+
 export function registerExportTools(server: McpServer): void {
   server.tool(
     'export_jobs',
@@ -16,10 +19,11 @@ export function registerExportTools(server: McpServer): void {
       format: z.enum(['json', 'csv', 'cron']).default('json').describe('Export format (default: json)'),
       user: z.string().optional().describe('Filter by Linux user'),
       tag: z.string().optional().describe('Filter by tag'),
+      agent_id: agentId,
     },
-    async ({ format, user, tag }) => {
+    async ({ format, user, tag, agent_id }) => {
       try {
-        const text = await apiClient.getText('/export', { format, user, tag });
+        const text = await apiClient.getText('/export', { format, user, tag }, agent_id);
         return okText(text);
       } catch (e) { return fail(e); }
     }

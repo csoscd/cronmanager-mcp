@@ -8,14 +8,17 @@ import { z } from 'zod';
 import { apiClient } from '../apiClient.js';
 import { ok, fail } from '../toolHelpers.js';
 
+const agentId = z.number().int().positive().optional()
+  .describe('Target a specific agent (multi-agent setup). Omit to use the default agent.');
+
 export function registerMaintenanceTools(server: McpServer, readOnly: boolean): void {
   server.tool(
     'list_maintenance_windows',
     'List all maintenance windows.',
-    {},
-    async () => {
+    { agent_id: agentId },
+    async ({ agent_id }) => {
       try {
-        return ok(await apiClient.get('/maintenance/windows'));
+        return ok(await apiClient.get('/maintenance/windows', undefined, agent_id));
       } catch (e) { return fail(e); }
     }
   );
@@ -23,10 +26,13 @@ export function registerMaintenanceTools(server: McpServer, readOnly: boolean): 
   server.tool(
     'get_maintenance_window',
     'Get a single maintenance window by ID.',
-    { id: z.number().int().positive().describe('Maintenance window ID') },
-    async ({ id }) => {
+    {
+      id: z.number().int().positive().describe('Maintenance window ID'),
+      agent_id: agentId,
+    },
+    async ({ id, agent_id }) => {
       try {
-        return ok(await apiClient.get(`/maintenance/windows/${id}`));
+        return ok(await apiClient.get(`/maintenance/windows/${id}`, undefined, agent_id));
       } catch (e) { return fail(e); }
     }
   );
@@ -42,10 +48,11 @@ export function registerMaintenanceTools(server: McpServer, readOnly: boolean): 
       duration_minutes: z.number().int().positive().describe('Duration in minutes'),
       description: z.string().optional().describe('Human-readable label'),
       active: z.boolean().optional().describe('Whether this window is active (default true)'),
+      agent_id: agentId,
     },
-    async (args) => {
+    async ({ agent_id, ...args }) => {
       try {
-        return ok(await apiClient.post('/maintenance/windows', args));
+        return ok(await apiClient.post('/maintenance/windows', args, agent_id));
       } catch (e) { return fail(e); }
     }
   );
@@ -60,10 +67,11 @@ export function registerMaintenanceTools(server: McpServer, readOnly: boolean): 
       duration_minutes: z.number().int().positive().optional().describe('Duration in minutes'),
       description: z.string().optional().describe('Human-readable label'),
       active: z.boolean().optional().describe('Whether this window is active'),
+      agent_id: agentId,
     },
-    async ({ id, ...fields }) => {
+    async ({ id, agent_id, ...fields }) => {
       try {
-        return ok(await apiClient.put(`/maintenance/windows/${id}`, fields));
+        return ok(await apiClient.put(`/maintenance/windows/${id}`, fields, agent_id));
       } catch (e) { return fail(e); }
     }
   );
@@ -74,10 +82,11 @@ export function registerMaintenanceTools(server: McpServer, readOnly: boolean): 
     {
       id: z.number().int().positive().describe('Maintenance window ID'),
       confirm: z.literal(true).describe('Must be true to confirm deletion'),
+      agent_id: agentId,
     },
-    async ({ id }) => {
+    async ({ id, agent_id }) => {
       try {
-        return ok(await apiClient.delete(`/maintenance/windows/${id}`));
+        return ok(await apiClient.delete(`/maintenance/windows/${id}`, agent_id));
       } catch (e) { return fail(e); }
     }
   );

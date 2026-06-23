@@ -10,8 +10,10 @@ import { registerTagTools } from './tags.js';
 import { registerMaintenanceTools } from './maintenance.js';
 import { registerExportTools } from './export.js';
 import { registerSettingsTools } from './settings.js';
+import { registerAgentTools } from './agents.js';
 
 export function registerAllTools(server: McpServer, readOnly: boolean): void {
+  registerAgentTools(server);
   registerJobTools(server, readOnly);
   registerExecutionTools(server, readOnly);
   registerTagTools(server);

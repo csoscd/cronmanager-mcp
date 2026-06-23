@@ -11,6 +11,9 @@ import { ok, fail } from '../toolHelpers.js';
 const targetsWarning = 'WARNING: if provided, completely replaces the existing target list.';
 const tagsWarning = 'WARNING: if provided, completely replaces the existing tag list.';
 
+const agentId = z.number().int().positive().optional()
+  .describe('Target a specific agent (multi-agent setup). Omit to use the default agent.');
+
 const jobWriteFields = {
   description: z.string().optional().describe('Human-readable label'),
   active: z.boolean().optional().describe('Whether the job is active'),
@@ -39,10 +42,11 @@ export function registerJobTools(server: McpServer, readOnly: boolean): void {
       active: z.boolean().optional().describe('true = active only, false = inactive only'),
       limit: z.number().int().min(1).max(500).optional().describe('Max results (default 100)'),
       offset: z.number().int().min(0).optional().describe('Pagination offset (default 0)'),
+      agent_id: agentId,
     },
-    async ({ tag, user, target, active, limit, offset }) => {
+    async ({ agent_id, tag, user, target, active, limit, offset }) => {
       try {
-        return ok(await apiClient.get('/jobs', { tag, user, target, active, limit, offset }));
+        return ok(await apiClient.get('/jobs', { tag, user, target, active, limit, offset }, agent_id));
       } catch (e) { return fail(e); }
     }
   );
@@ -50,10 +54,13 @@ export function registerJobTools(server: McpServer, readOnly: boolean): void {
   server.tool(
     'get_job',
     'Get a single cron job by ID.',
-    { id: z.number().int().positive().describe('Job ID') },
-    async ({ id }) => {
+    {
+      id: z.number().int().positive().describe('Job ID'),
+      agent_id: agentId,
+    },
+    async ({ id, agent_id }) => {
       try {
-        return ok(await apiClient.get(`/jobs/${id}`));
+        return ok(await apiClient.get(`/jobs/${id}`, undefined, agent_id));
       } catch (e) { return fail(e); }
     }
   );
@@ -69,11 +76,12 @@ export function registerJobTools(server: McpServer, readOnly: boolean): void {
       command: z.string().min(1).describe('Command to execute'),
       targets: z.array(z.string()).min(1).describe('Execution target(s), e.g. ["local"]'),
       tags: z.array(z.string()).optional().describe('Tag names to assign'),
+      agent_id: agentId,
       ...jobWriteFields,
     },
-    async (args) => {
+    async ({ agent_id, ...args }) => {
       try {
-        return ok(await apiClient.post('/jobs', args));
+        return ok(await apiClient.post('/jobs', args, agent_id));
       } catch (e) { return fail(e); }
     }
   );
@@ -93,11 +101,12 @@ export function registerJobTools(server: McpServer, readOnly: boolean): void {
       command: z.string().min(1).optional().describe('Command to execute'),
       targets: z.array(z.string()).optional().describe(targetsWarning),
       tags: z.array(z.string()).optional().describe(tagsWarning),
+      agent_id: agentId,
       ...jobWriteFields,
     },
-    async ({ id, ...fields }) => {
+    async ({ id, agent_id, ...fields }) => {
       try {
-        return ok(await apiClient.put(`/jobs/${id}`, fields));
+        return ok(await apiClient.put(`/jobs/${id}`, fields, agent_id));
       } catch (e) { return fail(e); }
     }
   );
@@ -108,10 +117,11 @@ export function registerJobTools(server: McpServer, readOnly: boolean): void {
     {
       id: z.number().int().positive().describe('Job ID'),
       confirm: z.literal(true).describe('Must be true to confirm deletion'),
+      agent_id: agentId,
     },
-    async ({ id }) => {
+    async ({ id, agent_id }) => {
       try {
-        return ok(await apiClient.delete(`/jobs/${id}`));
+        return ok(await apiClient.delete(`/jobs/${id}`, agent_id));
       } catch (e) { return fail(e); }
     }
   );

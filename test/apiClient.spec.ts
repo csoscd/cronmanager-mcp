@@ -176,4 +176,34 @@ describe('apiClient', () => {
     const [url] = fetchMock.mock.calls[0] as [string];
     expect(url).toMatch(/^https:\/\/cronmanager\.example\.com\/api\/v1\/jobs/);
   });
+
+  it('sets X-Agent-Id header from agentId parameter', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify({})),
+    });
+
+    const { apiClient } = await getClient();
+    await apiClient.get('/jobs', undefined, 3);
+
+    const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const headers = options.headers as Record<string, string>;
+    expect(headers['X-Agent-Id']).toBe('3');
+  });
+
+  it('agentId parameter overrides global CM_AGENT_ID', async () => {
+    process.env['CM_AGENT_ID'] = '1';
+    fetchMock.mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify({})),
+    });
+
+    const { apiClient } = await getClient();
+    await apiClient.get('/jobs', undefined, 5);
+
+    const [, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const headers = options.headers as Record<string, string>;
+    expect(headers['X-Agent-Id']).toBe('5');
+    delete process.env['CM_AGENT_ID'];
+  });
 });

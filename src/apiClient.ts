@@ -34,6 +34,7 @@ interface RequestOptions {
   query?: Record<string, QueryValue>;
   body?: unknown;
   text?: boolean;
+  agentId?: number;
 }
 
 async function request(method: string, path: string, opts?: RequestOptions): Promise<unknown> {
@@ -59,7 +60,8 @@ async function request(method: string, path: string, opts?: RequestOptions): Pro
     headers['Content-Type'] = 'application/json';
   }
 
-  if (config.CM_AGENT_ID) headers['X-Agent-Id'] = config.CM_AGENT_ID;
+  const effectiveAgentId = opts?.agentId !== undefined ? String(opts.agentId) : config.CM_AGENT_ID;
+  if (effectiveAgentId) headers['X-Agent-Id'] = effectiveAgentId;
 
   logger.debug('API request', { method, path });
 
@@ -94,18 +96,18 @@ async function request(method: string, path: string, opts?: RequestOptions): Pro
 }
 
 export const apiClient = {
-  get: <T>(path: string, query?: Record<string, QueryValue>): Promise<T> =>
-    request('GET', path, { query }) as Promise<T>,
+  get: <T>(path: string, query?: Record<string, QueryValue>, agentId?: number): Promise<T> =>
+    request('GET', path, { query, agentId }) as Promise<T>,
 
-  getText: (path: string, query?: Record<string, QueryValue>): Promise<string> =>
-    request('GET', path, { query, text: true }) as Promise<string>,
+  getText: (path: string, query?: Record<string, QueryValue>, agentId?: number): Promise<string> =>
+    request('GET', path, { query, text: true, agentId }) as Promise<string>,
 
-  post: <T>(path: string, body?: unknown): Promise<T> =>
-    request('POST', path, { body }) as Promise<T>,
+  post: <T>(path: string, body?: unknown, agentId?: number): Promise<T> =>
+    request('POST', path, { body, agentId }) as Promise<T>,
 
-  put: <T>(path: string, body?: unknown): Promise<T> =>
-    request('PUT', path, { body }) as Promise<T>,
+  put: <T>(path: string, body?: unknown, agentId?: number): Promise<T> =>
+    request('PUT', path, { body, agentId }) as Promise<T>,
 
-  delete: <T>(path: string): Promise<T> =>
-    request('DELETE', path) as Promise<T>,
+  delete: <T>(path: string, agentId?: number): Promise<T> =>
+    request('DELETE', path, { agentId }) as Promise<T>,
 };
