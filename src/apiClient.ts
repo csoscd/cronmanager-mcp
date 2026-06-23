@@ -3,12 +3,11 @@
 
 'use strict';
 
-import { Agent, setGlobalDispatcher } from 'undici';
 import { config } from './config.js';
 import { logger } from './logger.js';
 
 if (config.CM_INSECURE_TLS) {
-  setGlobalDispatcher(new Agent({ connect: { rejectUnauthorized: false } }));
+  process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
   logger.warn('CM_INSECURE_TLS=true: TLS certificate verification disabled');
 }
 
