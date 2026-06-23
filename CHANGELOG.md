@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-06-23
+
 ### Added
 - Initial implementation of the Cronmanager MCP server
 - 20 MCP tools covering jobs, execution history, tags, maintenance windows, export, and settings
@@ -16,4 +18,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `/healthz` (liveness) and `/readyz` (readiness, pings Cronmanager API) endpoints
 - Session management for concurrent MCP clients
 - Multi-arch Docker image (`linux/amd64`, `linux/arm64`)
-- GitHub Actions CI/CD workflows (`docker-release.yml`, `docker-dev.yml`)
+- GitHub Actions CI/CD workflows (`docker-release.yml`, `docker-dev.yml`, `auto-patch-release.yml`)
