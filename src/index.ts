@@ -56,18 +56,15 @@ async function handleMcp(req: IncomingMessage, res: ServerResponse): Promise<voi
     return;
   }
 
+  const server = createMcpServer();
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: () => randomUUID(),
+    onsessioninitialized: (newSid) => {
+      sessions.set(newSid, { transport, server });
+      transport.onclose = () => { sessions.delete(newSid); };
+    },
   });
-  const server = createMcpServer();
   await server.connect(transport);
-
-  const newSid = transport.sessionId;
-  if (newSid) {
-    sessions.set(newSid, { transport, server });
-    transport.onclose = () => { sessions.delete(newSid); };
-  }
-
   await transport.handleRequest(req, res, await parsedBody(req));
 }
 
