@@ -16,6 +16,7 @@ interface Config {
   TIMEOUT_MS: number;
   LOG_LEVEL: LogLevel;
   MCP_READONLY_MODE: boolean;
+  CM_INSECURE_TLS: boolean;
 }
 
 function require(name: string): string {
@@ -39,6 +40,7 @@ function buildConfig(): Config {
     TIMEOUT_MS: parseInt(process.env['TIMEOUT_MS'] ?? '10000', 10),
     LOG_LEVEL: parseLogLevel(process.env['LOG_LEVEL']),
     MCP_READONLY_MODE: process.env['MCP_READONLY_MODE'] === 'true',
+    CM_INSECURE_TLS: process.env['CM_INSECURE_TLS'] === 'true',
   };
 }
 

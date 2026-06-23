@@ -3,8 +3,14 @@
 
 'use strict';
 
+import { Agent, setGlobalDispatcher } from 'undici';
 import { config } from './config.js';
 import { logger } from './logger.js';
+
+if (config.CM_INSECURE_TLS) {
+  setGlobalDispatcher(new Agent({ connect: { rejectUnauthorized: false } }));
+  logger.warn('CM_INSECURE_TLS=true: TLS certificate verification disabled');
+}
 
 export class ApiHttpError extends Error {
   constructor(
