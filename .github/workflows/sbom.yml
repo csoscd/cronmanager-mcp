@@ -20,8 +20,13 @@
 name: SBOM
 
 on:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      release_tag:
+        description: "Release tag to attach SBOM to (e.g. v0.1.1)."
+        type: string
+        required: false
+        default: ""
   workflow_dispatch:
     inputs:
       release_tag:
@@ -59,7 +64,7 @@ jobs:
       # ── Generate SBOM ────────────────────────────────────────────────────────
       - name: Generate SBOM
         env:
-          RELEASE_TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
           SBOM_FILE="cronmanager-mcp-${RELEASE_TAG}-sbom.cyclonedx.json"
           npx --yes @cyclonedx/cyclonedx-npm \
@@ -72,7 +77,7 @@ jobs:
       - name: Attach SBOM to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
           if [ -z "$RELEASE_TAG" ]; then
             echo "No release tag specified – skipping upload."

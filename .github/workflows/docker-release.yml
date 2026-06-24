@@ -77,3 +77,13 @@ jobs:
             APP_VERSION=${{ steps.meta.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  sbom:
+    name: Generate and attach SBOM
+    needs: build-and-push
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.tag_override != '')
+    permissions:
+      contents: write
+    uses: ./.github/workflows/sbom.yml
+    with:
+      release_tag: ${{ github.event.release.tag_name || inputs.tag_override }}
