@@ -64,8 +64,7 @@ jobs:
           SBOM_FILE="cronmanager-mcp-${RELEASE_TAG}-sbom.cyclonedx.json"
           npx --yes @cyclonedx/cyclonedx-npm \
             --output-format JSON \
-            --output-file "$SBOM_FILE" \
-            --prod
+            --output-file "$SBOM_FILE"
           echo "Generated ${SBOM_FILE} ($(wc -l < "$SBOM_FILE") lines)"
           echo "SBOM_FILE=$SBOM_FILE" >> "$GITHUB_ENV"
 
