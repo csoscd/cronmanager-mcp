@@ -1,0 +1,85 @@
+################################################################################
+# SBOM – Generate and attach a CycloneDX JSON Software Bill of Materials
+#
+# Trigger: every published GitHub release
+#
+# Produces:
+#   cronmanager-mcp-<version>-sbom.cyclonedx.json   (attached to the release)
+#
+# Tool: @cyclonedx/cyclonedx-npm (official CycloneDX npm plugin)
+#   Reads package-lock.json and generates a CycloneDX JSON SBOM covering all
+#   direct and transitive npm dependencies with purl, license, and hash data.
+#
+# No additional secrets are required – GITHUB_TOKEN (contents: write) is
+# sufficient to upload release assets.
+#
+# @author  Christian Schulz <technik@meinetechnikwelt.rocks>
+# @license GNU General Public License version 3 or later
+################################################################################
+
+name: SBOM
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to attach SBOM to (e.g. v0.1.1). Leave empty to skip upload."
+        required: false
+        default: ""
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: write   # required to upload the SBOM file as a release asset
+
+jobs:
+  sbom:
+    name: Generate CycloneDX SBOM
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Checkout ─────────────────────────────────────────────────────────────
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # ── Node.js ──────────────────────────────────────────────────────────────
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # ── Install production dependencies ──────────────────────────────────────
+      - name: Install dependencies (production only)
+        run: npm ci --omit=dev
+
+      # ── Generate SBOM ────────────────────────────────────────────────────────
+      - name: Generate SBOM
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
+        run: |
+          SBOM_FILE="cronmanager-mcp-${RELEASE_TAG}-sbom.cyclonedx.json"
+          npx --yes @cyclonedx/cyclonedx-npm \
+            --output-format JSON \
+            --output-file "$SBOM_FILE" \
+            --prod
+          echo "Generated ${SBOM_FILE} ($(wc -l < "$SBOM_FILE") lines)"
+          echo "SBOM_FILE=$SBOM_FILE" >> "$GITHUB_ENV"
+
+      # ── Attach to release ────────────────────────────────────────────────────
+      - name: Attach SBOM to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
+        run: |
+          if [ -z "$RELEASE_TAG" ]; then
+            echo "No release tag specified – skipping upload."
+            exit 0
+          fi
+          gh release upload "$RELEASE_TAG" \
+            "$SBOM_FILE" \
+            --clobber
+          echo "Uploaded $SBOM_FILE to release $RELEASE_TAG"
