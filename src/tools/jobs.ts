@@ -29,6 +29,9 @@ const jobWriteFields = {
   retry_count: z.number().int().optional().describe('Number of retries on failure'),
   retry_delay_minutes: z.number().int().optional().describe('Delay between retries'),
   restart_on_exitcodes: z.array(z.number().int()).optional().describe('Exit codes that trigger a retry'),
+  notify_on_silence: z.boolean().optional().describe('Notify when job has been silent for the grace period'),
+  silence_grace_minutes: z.number().int().nullable().optional()
+    .describe('Minutes of silence before a silence alert is sent (null = use server default)'),
 };
 
 export function registerJobTools(server: McpServer, readOnly: boolean): void {
