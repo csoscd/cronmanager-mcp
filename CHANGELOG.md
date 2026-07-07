@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-07
+
 ### Added
-- `list_agents` tool: list all configured Cronmanager agents (`GET /api/v1/agents`, requires `settings:read` scope)
+- `list_agents` tool: list all configured Cronmanager agents (`GET /api/v1/agents`, requires `settings:read` scope) — CronManager ≥ 4.2.0
 - `agent_id` optional parameter on all tools to target a specific agent per call (overrides the global `CM_AGENT_ID` environment variable)
+- `get_audit_log` tool: paginated audit log with filters (`GET /api/v1/audit`, requires `audit:read` scope, admin-only) — CronManager ≥ 4.3.4
+- `create_job` / `update_job`: added `notify_on_silence` and `silence_grace_minutes` fields — CronManager ≥ 4.5.0
 
 ## [0.1.1] - 2026-06-23
 

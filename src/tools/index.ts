@@ -11,9 +11,11 @@ import { registerMaintenanceTools } from './maintenance.js';
 import { registerExportTools } from './export.js';
 import { registerSettingsTools } from './settings.js';
 import { registerAgentTools } from './agents.js';
+import { registerAuditTools } from './audit.js';
 
 export function registerAllTools(server: McpServer, readOnly: boolean): void {
   registerAgentTools(server);
+  registerAuditTools(server);
   registerJobTools(server, readOnly);
   registerExecutionTools(server, readOnly);
   registerTagTools(server);
