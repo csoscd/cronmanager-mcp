@@ -11,11 +11,14 @@ Wenn mehrere Cronmanager-Agenten konfiguriert sind (verschiedene Server/Umgebung
 ### Agenten
 - **`list_agents`** – Alle konfigurierten Cronmanager-Agenten auflisten (erfordert `settings:read` Scope)
 
+### Audit Log
+- **`get_audit_log`** – Paginierten Audit-Log abrufen (erfordert `audit:read` Scope, nur Admins; CronManager ≥ 4.3.4); Filter: `username`, `action_prefix` (z.B. `"cron"` für alle `cron.*`-Aktionen), `date_from`, `date_to` (`YYYY-MM-DD`); optional `limit`, `offset`, `agent_id`
+
 ### Jobs
 - **`list_jobs`** – Jobs auflisten; Filter: `tag`, `target`, `user`, `active`, `limit`, `offset`; optional `agent_id`
 - **`get_job`** – Einzelnen Job abrufen (`id`); optional `agent_id`
-- **`create_job`** – Job anlegen (`linux_user`, `schedule`, `command`, `targets[]` erforderlich; `description`, `active`, `notify_on_failure`, `execution_limit_seconds`, `auto_kill_on_limit`, `singleton`, `retry_count`, `retry_delay_minutes`, `tags[]` optional); optional `agent_id`
-- **`update_job`** – Job aktualisieren (`id` + beliebige Felder); **Achtung:** `targets` und `tags` werden bei Angabe komplett ersetzt – immer die vollständige Liste übergeben; optional `agent_id`
+- **`create_job`** – Job anlegen (`linux_user`, `schedule`, `command`, `targets[]` erforderlich; `description`, `active`, `notify_on_failure`, `execution_limit_seconds`, `auto_kill_on_limit`, `singleton`, `retry_count`, `retry_delay_minutes`, `notify_on_silence`, `silence_grace_minutes`, `tags[]` optional); optional `agent_id`
+- **`update_job`** – Job aktualisieren (`id` + beliebige Felder, u.a. `notify_on_silence`, `silence_grace_minutes`); **Achtung:** `targets` und `tags` werden bei Angabe komplett ersetzt – immer die vollständige Liste übergeben; optional `agent_id`
 - **`delete_job`** – Job löschen (`id`, `confirm: true` erforderlich); optional `agent_id`
 
 ### Ausführung & Historie
@@ -63,6 +66,12 @@ Wenn mehrere Cronmanager-Agenten konfiguriert sind (verschiedene Server/Umgebung
 
 **Job sofort auf einem bestimmten Target ausführen:**
 → `execute_job` mit `id` und `targets: ["<target>"]`
+
+**Audit-Log der letzten Cron-Änderungen anzeigen:**
+→ `get_audit_log` mit `action_prefix: "cron"`, `date_from: "YYYY-MM-DD"`
+
+**Wer hat wann eine Einstellung geändert?**
+→ `get_audit_log` mit `action_prefix: "settings"`
 
 ## Hinweise
 - `confirm: true` ist bei destruktiven Aktionen (delete, kill) Pflicht

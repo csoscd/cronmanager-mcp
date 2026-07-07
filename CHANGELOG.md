@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-07
+
+### Changed
+- Example skill (`examples/skills/cronmanager.md`): documented `get_audit_log`, `notify_on_silence`/`silence_grace_minutes` in create_job/update_job, and two audit log workflow examples
+
 ## [0.2.0] - 2026-07-07
 
 ### Added
