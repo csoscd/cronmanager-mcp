@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-10
+
+### Fixed
+- `get_job_history` and `get_timeline`: `status` enum was `'failure'` instead of the correct `'failed'` — the API has always required `failed`; using `failure` caused Zod validation to block the value before it ever reached the API
+- `get_settings_section`: `performance_monitor` (available since CronManager 4.4.0) and `web` (read-only, since 4.6.0) were missing from the allowed sections enum, making them unreachable via this tool
+
+### Added
+- `get_settings_section`: now accepts `performance_monitor` and `web` sections
+- `update_settings_section`: now accepts `performance_monitor`; `web` is correctly excluded (read-only, API returns 405)
+- `list_agents`: description updated to document the `web_url` field added in CronManager 4.6.0
+- Skill (`examples/skills/cronmanager.md`): corrected `get_timeline` description (global timeline, not per-job monitor); corrected `get_job_history` parameter list; documented all settings sections including `web` and `performance_monitor`; added `agent_id` response field note; added status-filter value note (`failed`, not `failure`)
+
 ## [0.2.1] - 2026-07-07
 
 ### Changed

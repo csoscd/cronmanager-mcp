@@ -17,7 +17,7 @@ export function registerExecutionTools(server: McpServer, readOnly: boolean): vo
     'Get execution history for a specific job.',
     {
       id: z.number().int().positive().describe('Job ID'),
-      status: z.enum(['success', 'failure', 'running']).optional().describe('Filter by execution status'),
+      status: z.enum(['success', 'failed', 'running']).optional().describe('Filter by execution status'),
       limit: z.number().int().min(1).max(500).optional().describe('Max results (default 50)'),
       offset: z.number().int().min(0).optional().describe('Pagination offset (default 0)'),
       agent_id: agentId,
@@ -33,7 +33,7 @@ export function registerExecutionTools(server: McpServer, readOnly: boolean): vo
     'get_timeline',
     'Get execution history across all jobs (timeline view).',
     {
-      status: z.enum(['success', 'failure', 'running']).optional().describe('Filter by execution status'),
+      status: z.enum(['success', 'failed', 'running']).optional().describe('Filter by execution status'),
       tag: z.string().optional().describe('Filter by job tag'),
       limit: z.number().int().min(1).max(500).optional().describe('Max results (default 100)'),
       offset: z.number().int().min(0).optional().describe('Pagination offset (default 0)'),
