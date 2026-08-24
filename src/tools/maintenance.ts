@@ -90,4 +90,49 @@ export function registerMaintenanceTools(server: McpServer, readOnly: boolean): 
       } catch (e) { return fail(e); }
     }
   );
+
+  server.tool(
+    'purge_logs',
+    'Immediately delete finished execution log rows that exceed the per-job or global log retention period. Running executions are never deleted. Requires maintenance:write scope. Available on CronManager ≥ 4.8.0.',
+    {
+      confirm: z.literal(true).describe('Must be true to confirm purge'),
+      agent_id: agentId,
+    },
+    async ({ agent_id }) => {
+      try {
+        return ok(await apiClient.post('/maintenance/logs/purge', undefined, agent_id));
+      } catch (e) { return fail(e); }
+    }
+  );
+
+  server.tool(
+    'cleanup_history',
+    'Permanently delete all finished execution log rows older than the given number of days. Running executions are never deleted. Requires maintenance:write scope. Available on CronManager ≥ 4.8.0.',
+    {
+      older_than_days: z.number().int().min(1).optional()
+        .describe('Delete logs older than this many days (default: 90, minimum: 1)'),
+      confirm: z.literal(true).describe('Must be true to confirm deletion'),
+      agent_id: agentId,
+    },
+    async ({ older_than_days, agent_id }) => {
+      try {
+        const body = older_than_days !== undefined ? { older_than_days } : undefined;
+        return ok(await apiClient.post('/maintenance/history/cleanup', body, agent_id));
+      } catch (e) { return fail(e); }
+    }
+  );
+
+  server.tool(
+    'cleanup_once_entries',
+    'Remove stale run-once crontab entries left behind by Run Now jobs whose automatic self-cleanup failed (e.g. the agent was temporarily unreachable). Requires maintenance:write scope. Available on CronManager ≥ 4.8.0.',
+    {
+      confirm: z.literal(true).describe('Must be true to confirm cleanup'),
+      agent_id: agentId,
+    },
+    async ({ agent_id }) => {
+      try {
+        return ok(await apiClient.post('/maintenance/once/cleanup', undefined, agent_id));
+      } catch (e) { return fail(e); }
+    }
+  );
 }

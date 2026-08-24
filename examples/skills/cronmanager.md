@@ -19,9 +19,33 @@ Wenn mehrere Cronmanager-Agenten konfiguriert sind (verschiedene Server/Umgebung
 ### Jobs
 - **`list_jobs`** – Jobs auflisten; Filter: `tag`, `target`, `user`, `active`, `limit`, `offset`; optional `agent_id`
 - **`get_job`** – Einzelnen Job abrufen (`id`); optional `agent_id`
-- **`create_job`** – Job anlegen (`linux_user`, `schedule`, `command`, `targets[]` erforderlich; `description`, `active`, `notify_on_failure`, `execution_limit_seconds`, `auto_kill_on_limit`, `singleton`, `retry_count`, `retry_delay_minutes`, `notify_on_silence`, `silence_grace_minutes`, `tags[]` optional); optional `agent_id`
-- **`update_job`** – Job aktualisieren (`id` + beliebige Felder, u.a. `notify_on_silence`, `silence_grace_minutes`); **Achtung:** `targets` und `tags` werden bei Angabe komplett ersetzt – immer die vollständige Liste übergeben; optional `agent_id`
+- **`create_job`** – Job anlegen (`linux_user`, `schedule`, `command`, `targets[]` erforderlich; optionale Felder siehe unten); optional `agent_id`
+- **`update_job`** – Job aktualisieren (`id` + beliebige Felder); **Achtung:** `targets` und `tags` werden bei Angabe komplett ersetzt – immer die vollständige Liste übergeben; optional `agent_id`
 - **`delete_job`** – Job löschen (`id`, `confirm: true` erforderlich); optional `agent_id`
+
+**Optionale Felder für `create_job` / `update_job`:**
+
+| Feld | Typ | Beschreibung |
+|---|---|---|
+| `description` | string | Beschreibung / Label |
+| `active` | bool | Job aktiv (default: true) |
+| `tags` | string[] | Tag-Namen |
+| `notify_on_failure` | bool | Benachrichtigung bei Fehler |
+| `notify_on_recovery` | bool | Benachrichtigung bei Wiederherstellung |
+| `notify_after_failures` | int | Erst nach N aufeinanderfolgenden Fehlern benachrichtigen |
+| `notify_after_limit_exceeded` | bool | Benachrichtigung wenn Zeitlimit überschritten |
+| `notify_on_silence` | bool | Benachrichtigung wenn Job in der Gnadenfrist still bleibt |
+| `silence_grace_minutes` | int\|null | Minuten Stille vor Silence-Alert (`null` = Server-Default) |
+| `execution_limit_seconds` | int | Max. Laufzeit in Sekunden (0 = unbegrenzt) |
+| `auto_kill_on_limit` | bool | Job bei Zeitlimit-Überschreitung abbrechen |
+| `singleton` | bool | Parallele Ausführungen verhindern |
+| `run_in_maintenance` | bool | Ausführung auch während Maintenance-Windows erlauben |
+| `retention_days` | int | Ausführungshistorie für N Tage behalten (0 = immer) |
+| `retry_count` | int | Anzahl Wiederholungsversuche bei Fehler |
+| `retry_delay_minutes` | int | Verzögerung zwischen Wiederholungsversuchen |
+| `restart_on_exitcodes` | int[] | Exit-Codes, die einen Retry auslösen |
+
+**Hinweis:** `last_silence_alert_at` (string|null) ist ein read-only Feld auf Job-Objekten – es zeigt den Zeitpunkt des letzten Silence-Alerts an und kann nicht gesetzt werden.
 
 ### Ausführung & Historie
 - **`execute_job`** – Job sofort ausführen (`id`); optional `agent_id`
@@ -29,8 +53,10 @@ Wenn mehrere Cronmanager-Agenten konfiguriert sind (verschiedene Server/Umgebung
 - **`get_job_history`** – Ausführungshistorie eines bestimmten Jobs (`id`); Filter: `status` (`success` | `failed` | `running`), `limit` (max 500, default 50), `offset`; optional `agent_id`
 - **`get_timeline`** – Ausführungshistorie aller Jobs (global); Filter: `status` (`success` | `failed` | `running`), `tag`, `limit` (max 500, default 100), `offset`; optional `agent_id`
 
-### Tags
+### Tags & Targets
 - **`list_tags`** – Alle Tags auflisten; optional `agent_id`
+- **`list_linux_users`** – Alle Linux-User auflisten, die auf dem Agent für Cron-Jobs verwendet werden können; enthält `docker_mode`-Flag (true = nur `root` gültig); erfordert `jobs:read` Scope; CronManager ≥ 4.8.0; optional `agent_id`
+- **`list_targets`** – Alle distinct Execution-Targets auflisten, mit Anzahl der Jobs je Target; Filter: `active` (true = nur aktive Jobs, false = nur inaktive); erfordert `jobs:read` Scope; CronManager ≥ 4.8.0; optional `agent_id`
 
 ### Maintenance Windows
 - **`list_maintenance_windows`** – Alle Maintenance Windows auflisten; optional `agent_id`
@@ -38,6 +64,11 @@ Wenn mehrere Cronmanager-Agenten konfiguriert sind (verschiedene Server/Umgebung
 - **`create_maintenance_window`** – Maintenance Window anlegen (`target`, `cron_schedule`, `duration_minutes`; optional `description`, `active`); optional `agent_id`
 - **`update_maintenance_window`** – Maintenance Window aktualisieren (`id` + beliebige Felder); optional `agent_id`
 - **`delete_maintenance_window`** – Maintenance Window löschen (`id`, `confirm: true` erforderlich); optional `agent_id`
+
+### Maintenance Operationen (CronManager ≥ 4.8.0)
+- **`purge_logs`** – Abgeschlossene Ausführungs-Logs sofort löschen, die die Retention-Policy überschreiten (`confirm: true`); erfordert `maintenance:write` Scope; optional `agent_id`
+- **`cleanup_history`** – Alle abgeschlossenen Ausführungs-Logs älter als N Tage dauerhaft löschen (`older_than_days`, default 90, min 1; `confirm: true`); erfordert `maintenance:write` Scope; optional `agent_id`
+- **`cleanup_once_entries`** – Verwaiste Run-Now-Crontab-Einträge entfernen, deren automatische Selbstbereinigung fehlgeschlagen ist (`confirm: true`); erfordert `maintenance:write` Scope; optional `agent_id`
 
 ### Export & Einstellungen
 - **`export_jobs`** – Jobs exportieren; `format`: `json` (default), `csv` oder `cron`; optional `user`, `tag`; optional `agent_id`
@@ -53,6 +84,9 @@ Wenn mehrere Cronmanager-Agenten konfiguriert sind (verschiedene Server/Umgebung
 
 **Jobs eines bestimmten Agenten auflisten:**
 → `list_jobs` mit `agent_id: <id>`
+
+**Welche Linux-User und Targets gibt es auf Agent 2?**
+→ `list_linux_users` mit `agent_id: 2`; `list_targets` mit `agent_id: 2`
 
 **Fehlgeschlagene Jobs der letzten 24 Stunden anzeigen:**
 → `get_timeline` mit `status: "failed"`, `limit: 100`
@@ -84,10 +118,20 @@ Wenn mehrere Cronmanager-Agenten konfiguriert sind (verschiedene Server/Umgebung
 **Web-Identity eines Agenten lesen:**
 → `get_settings_section` mit `section: "web"`
 
+**Logs gem. Retention-Policy sofort bereinigen:**
+→ `purge_logs` mit `confirm: true`
+
+**Alle Logs älter als 30 Tage löschen:**
+→ `cleanup_history` mit `older_than_days: 30`, `confirm: true`
+
+**Verwaiste Run-Now-Einträge aufräumen:**
+→ `cleanup_once_entries` mit `confirm: true`
+
 ## Hinweise
-- `confirm: true` ist bei destruktiven Aktionen (delete, kill) Pflicht
+- `confirm: true` ist bei destruktiven Aktionen (delete, kill, purge, cleanup) Pflicht
 - Fehlermeldungen vom API werden direkt zurückgegeben und enthalten Hinweise zur Korrektur
 - Bei `update_job`: wenn `targets` oder `tags` weggelassen werden, bleiben die bestehenden Werte erhalten – nur bei expliziter Angabe werden sie ersetzt
 - `agent_id` ist bei allen Tools (außer `list_agents`) optional; ohne Angabe wird der Standard-Agent verwendet
 - Status-Filter bei `get_job_history` und `get_timeline`: gültige Werte sind `success`, `failed`, `running` (nicht `failure`)
 - API-Antworten aller agenten-spezifischen Endpoints enthalten `agent_id` als erstes Feld – nützlich zur Identifikation im Multi-Agent-Betrieb, da Job-IDs nur pro Agent eindeutig sind
+- `purge_logs`, `cleanup_history`, `cleanup_once_entries`, `list_linux_users` und `list_targets` erfordern CronManager ≥ 4.8.0

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-24
+
+### Added
+- `list_linux_users` tool: list all Linux users available for cron job scheduling on the selected agent; includes `docker_mode` flag (`GET /api/v1/linux-users`, requires `jobs:read` scope, CronManager ≥ 4.8.0)
+- `list_targets` tool: list all distinct execution targets with job counts; optional `active` filter (`GET /api/v1/targets`, requires `jobs:read` scope, CronManager ≥ 4.8.0)
+- `purge_logs` tool: immediately delete finished execution log rows that exceed the retention policy (`POST /api/v1/maintenance/logs/purge`, requires `maintenance:write` scope, CronManager ≥ 4.8.0)
+- `cleanup_history` tool: permanently delete all finished execution logs older than N days; optional `older_than_days` (default 90, min 1) (`POST /api/v1/maintenance/history/cleanup`, requires `maintenance:write` scope, CronManager ≥ 4.8.0)
+- `cleanup_once_entries` tool: remove stale run-once crontab entries left behind by failed Run Now self-cleanup (`POST /api/v1/maintenance/once/cleanup`, requires `maintenance:write` scope, CronManager ≥ 4.8.0)
+- Skill (`examples/skills/cronmanager.md`): documented all five new tools with workflows; completed optional job field table for `create_job`/`update_job` (previously missing `notify_on_recovery`, `notify_after_failures`, `notify_after_limit_exceeded`, `run_in_maintenance`, `retention_days`, `restart_on_exitcodes`); documented `last_silence_alert_at` as read-only job field
+
 ## [0.3.0] - 2026-08-10
 
 ### Fixed
