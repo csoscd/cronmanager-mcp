@@ -1,6 +1,6 @@
 {
   "name": "cronmanager-mcp",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "description": "MCP server exposing the Cronmanager REST API as tools for LLM clients",
   "type": "module",
   "main": "dist/index.js",

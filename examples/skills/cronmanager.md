@@ -44,14 +44,35 @@ Wenn mehrere Cronmanager-Agenten konfiguriert sind (verschiedene Server/Umgebung
 | `retry_count` | int | Anzahl Wiederholungsversuche bei Fehler |
 | `retry_delay_minutes` | int | Verzögerung zwischen Wiederholungsversuchen |
 | `restart_on_exitcodes` | int[] | Exit-Codes, die einen Retry auslösen |
+| `dependency` | object\|null | Job-Abhängigkeit (CronManager ≥ 7.0.0); `null` in `update_job` entfernt eine bestehende Abhängigkeit |
 
-**Hinweis:** `last_silence_alert_at` (string|null) ist ein read-only Feld auf Job-Objekten – es zeigt den Zeitpunkt des letzten Silence-Alerts an und kann nicht gesetzt werden.
+**Abhängigkeitsfeld `dependency` (CronManager ≥ 7.0.0):**
+
+| Unterfeld | Typ | Beschreibung |
+|---|---|---|
+| `type` | `"requires"` \| `"triggered_by"` | **requires**: Job behält seinen Schedule, prüft aber vor jeder Ausführung, ob der Vorgänger die Bedingung erfüllt. **triggered_by**: Kein Schedule — Job wird event-driven gestartet, wenn der Vorgänger abschließt. |
+| `predecessor_id` | int | ID des Vorgänger-Jobs |
+| `exit_codes` | string | Komma-separierte Exit-Codes, die die Bedingung erfüllen, z.B. `"0"` oder `"0,1"`. Leer = beliebiger Exit-Code. |
+| `max_age_minutes` | int | Nur `requires`: Wie viele Minuten zurück nach einer qualifizierenden Vorgänger-Ausführung gesucht wird (0 = kein Alterslimit). |
+| `trigger_delay_minutes` | int | Nur `triggered_by`: Minuten Wartezeit nach Abschluss des Vorgängers, bevor der abhängige Job eingeplant wird (0 = nächste Cron-Minute). |
+
+**Hinweis `create_job`:** `schedule` ist für normale Jobs und `requires`-Abhängigkeiten Pflichtfeld. Für `triggered_by`-Jobs muss `schedule` weggelassen oder `null` gesetzt werden.
+
+**Hinweise zu read-only Feldern auf Job-Objekten:**
+- `last_silence_alert_at` (string|null) – Zeitpunkt des letzten Silence-Alerts, nicht setzbar.
+- `dependency` im Response enthält zusätzlich alle gespeicherten Felder inkl. `trigger_delay_minutes`.
 
 ### Ausführung & Historie
 - **`execute_job`** – Job sofort ausführen (`id`); optional `agent_id`
 - **`kill_execution`** – Laufende Ausführung abbrechen (`executionId`, `confirm: true` erforderlich); optional `agent_id`
-- **`get_job_history`** – Ausführungshistorie eines bestimmten Jobs (`id`); Filter: `status` (`success` | `failed` | `running`), `limit` (max 500, default 50), `offset`; optional `agent_id`
-- **`get_timeline`** – Ausführungshistorie aller Jobs (global); Filter: `status` (`success` | `failed` | `running`), `tag`, `limit` (max 500, default 100), `offset`; optional `agent_id`
+- **`get_job_history`** – Ausführungshistorie eines bestimmten Jobs (`id`); Filter: `status` (`success` | `failed` | `running` | `skipped`), `unacknowledged_only` (bool), `limit` (max 500, default 50), `offset`; optional `agent_id`
+- **`get_timeline`** – Ausführungshistorie aller Jobs (global); Filter: `status` (`success` | `failed` | `running` | `skipped`), `tag`, `limit` (max 500, default 100), `offset`; optional `agent_id`
+- **`check_job_dependency`** – Abhängigkeit eines Jobs prüfen: gibt `{satisfied: bool, reason: string}` zurück; nützlich für Debugging wenn ein `requires`-Job übersprungen wird; erfordert `jobs:read` Scope; CronManager ≥ 7.0.0; optional `agent_id`
+
+### Fehler-Bestätigung (CronManager ≥ 6.0.0, Scope `executions:acknowledge`)
+- **`acknowledge_execution`** – Fehlgeschlagene Ausführung als bestätigt markieren (`executionId`); unterdrückt den Eintrag im Dashboard, der Verlauf bleibt erhalten; optional `agent_id`
+- **`unacknowledge_execution`** – Bestätigung einer Ausführung zurücknehmen (`executionId`); macht den Eintrag im Dashboard wieder sichtbar; optional `agent_id`
+- **`acknowledge_all_job_executions`** – Alle unbestätigten Fehler eines Jobs in einem Schritt bestätigen (`id`); gibt `acknowledged_count` zurück; CronManager ≥ 7.0.0; optional `agent_id`
 
 ### Tags & Targets
 - **`list_tags`** – Alle Tags auflisten; optional `agent_id`
@@ -127,11 +148,38 @@ Wenn mehrere Cronmanager-Agenten konfiguriert sind (verschiedene Server/Umgebung
 **Verwaiste Run-Now-Einträge aufräumen:**
 → `cleanup_once_entries` mit `confirm: true`
 
+**Alle unbestätigten Fehler eines Jobs quittieren:**
+→ `acknowledge_all_job_executions` mit `id: <jobId>`
+
+**Einzelne Ausführung als bestätigt markieren:**
+→ `acknowledge_execution` mit `executionId: <id>`
+
+**Nur unbestätigte Fehler eines Jobs anzeigen:**
+→ `get_job_history` mit `id: <jobId>`, `unacknowledged_only: true`
+
+**Nur Maintenance-Skip-Einträge (exit_code -4) anzeigen:**
+→ `get_timeline` mit `status: "skipped"`
+
+**Job als triggered_by-Abhängigkeit anlegen (startet nach Job 5):**
+→ `create_job` mit `linux_user`, `command`, `targets`, `dependency: {type: "triggered_by", predecessor_id: 5, exit_codes: "0"}`; `schedule` weglassen
+
+**Job mit requires-Abhängigkeit anlegen (läuft nach eigenem Schedule, prüft Vorgänger):**
+→ `create_job` mit `schedule`, `linux_user`, `command`, `targets`, `dependency: {type: "requires", predecessor_id: 5, exit_codes: "0", max_age_minutes: 60}`
+
+**Abhängigkeit eines Jobs debuggen (warum wird er übersprungen?):**
+→ `check_job_dependency` mit `id: <jobId>`
+
+**Abhängigkeit entfernen:**
+→ `update_job` mit `id` und `dependency: null`
+
 ## Hinweise
 - `confirm: true` ist bei destruktiven Aktionen (delete, kill, purge, cleanup) Pflicht
 - Fehlermeldungen vom API werden direkt zurückgegeben und enthalten Hinweise zur Korrektur
 - Bei `update_job`: wenn `targets` oder `tags` weggelassen werden, bleiben die bestehenden Werte erhalten – nur bei expliziter Angabe werden sie ersetzt
 - `agent_id` ist bei allen Tools (außer `list_agents`) optional; ohne Angabe wird der Standard-Agent verwendet
-- Status-Filter bei `get_job_history` und `get_timeline`: gültige Werte sind `success`, `failed`, `running` (nicht `failure`)
+- Status-Filter bei `get_job_history` und `get_timeline`: gültige Werte sind `success`, `failed`, `running`, `skipped` (nicht `failure`); `failed` schließt Maintenance-Sentinels (exit_code -4) aus, `skipped` zeigt ausschließlich diese
 - API-Antworten aller agenten-spezifischen Endpoints enthalten `agent_id` als erstes Feld – nützlich zur Identifikation im Multi-Agent-Betrieb, da Job-IDs nur pro Agent eindeutig sind
 - `purge_logs`, `cleanup_history`, `cleanup_once_entries`, `list_linux_users` und `list_targets` erfordern CronManager ≥ 4.8.0
+- `acknowledge_execution`, `unacknowledge_execution` erfordern CronManager ≥ 6.0.0 und Scope `executions:acknowledge`
+- `acknowledge_all_job_executions`, `check_job_dependency` und Job-Abhängigkeitsfelder erfordern CronManager ≥ 7.0.0
+- Zyklen im Dependency-Graphen werden beim Anlegen/Bearbeiten vom Server erkannt und mit HTTP 422 abgewiesen
