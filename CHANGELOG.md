@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-23
+
+### Added
+- `acknowledge_execution` tool: mark a finished execution as acknowledged, suppressing it from the dashboard error indicators (`POST /api/v1/executions/{id}/acknowledge`, requires `executions:acknowledge` scope, CronManager ≥ 6.0.0)
+- `unacknowledge_execution` tool: clear the acknowledgement on a previously acknowledged execution (`DELETE /api/v1/executions/{id}/acknowledge`, requires `executions:acknowledge` scope, CronManager ≥ 6.0.0)
+- `acknowledge_all_job_executions` tool: bulk-acknowledge all unacknowledged failed executions for a job in one step; returns `acknowledged_count` (`POST /api/v1/jobs/{id}/acknowledge-all`, requires `executions:acknowledge` scope, CronManager ≥ 7.0.0)
+- `check_job_dependency` tool: check whether a job's `requires`-type dependency is currently satisfied; returns `{satisfied: bool, reason: string}`; useful for debugging skipped jobs (`GET /api/v1/jobs/{id}/dependency-check`, requires `jobs:read` scope, CronManager ≥ 7.0.0)
+- `get_job_history`: new `unacknowledged_only` parameter (boolean, maps to `?unacknowledged_only=1`); added `skipped` to the `status` enum (CronManager ≥ 6.2.0)
+- `get_timeline`: added `skipped` to the `status` enum (CronManager ≥ 6.2.0)
+- `create_job` / `update_job`: new `dependency` field (object|null) for job dependency configuration — `type` (`requires`|`triggered_by`), `predecessor_id`, `exit_codes`, `max_age_minutes`, `trigger_delay_minutes` (CronManager ≥ 7.0.0); `update_job` accepts `dependency: null` to remove an existing dependency
+- `create_job`: `schedule` is now optional/nullable to support `triggered_by` dependency jobs that have no cron schedule (CronManager ≥ 7.0.0)
+- Skill (`examples/skills/cronmanager.md`): documented all four new tools; added `dependency` field table with sub-fields; added `skipped` status note; added `unacknowledged_only` note; added 7 new workflow examples for acknowledge, dependency, and skipped-status use cases; updated status-filter note to include `skipped`; added version/scope requirements for new tools
+
 ## [0.4.0] - 2026-08-24
 
 ### Added

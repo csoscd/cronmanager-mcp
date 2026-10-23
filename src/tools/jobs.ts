@@ -14,6 +14,23 @@ const tagsWarning = 'WARNING: if provided, completely replaces the existing tag 
 const agentId = z.number().int().positive().optional()
   .describe('Target a specific agent (multi-agent setup). Omit to use the default agent.');
 
+const dependencySchema = z.object({
+  type: z.enum(['requires', 'triggered_by']).describe(
+    '"requires": job keeps its cron schedule but checks the predecessor before each run. ' +
+    '"triggered_by": no schedule — job is event-driven, started automatically when the predecessor finishes.'
+  ),
+  predecessor_id: z.number().int().positive().describe('ID of the predecessor job'),
+  exit_codes: z.string().optional().describe(
+    'Comma-separated exit codes that satisfy the dependency, e.g. "0" or "0,1". Empty string or omit = any exit code.'
+  ),
+  max_age_minutes: z.number().int().min(0).optional().describe(
+    '"requires" only: how far back to look for a qualifying predecessor execution in minutes (0 = no age limit).'
+  ),
+  trigger_delay_minutes: z.number().int().min(0).optional().describe(
+    '"triggered_by" only: minutes to wait after predecessor finishes before scheduling the triggered job (0 = next cron-minute).'
+  ),
+});
+
 const jobWriteFields = {
   description: z.string().optional().describe('Human-readable label'),
   active: z.boolean().optional().describe('Whether the job is active'),
@@ -32,6 +49,9 @@ const jobWriteFields = {
   notify_on_silence: z.boolean().optional().describe('Notify when job has been silent for the grace period'),
   silence_grace_minutes: z.number().int().nullable().optional()
     .describe('Minutes of silence before a silence alert is sent (null = use server default)'),
+  dependency: dependencySchema.nullable().optional().describe(
+    'Job dependency configuration (CronManager ≥ 7.0.0). Set to null in update_job to remove an existing dependency.'
+  ),
 };
 
 export function registerJobTools(server: McpServer, readOnly: boolean): void {
@@ -72,10 +92,16 @@ export function registerJobTools(server: McpServer, readOnly: boolean): void {
 
   server.tool(
     'create_job',
-    'Create a new cron job. Required: linux_user, schedule, command, targets.',
+    [
+      'Create a new cron job. Required: linux_user, command, targets.',
+      'schedule is required for normal and "requires"-type dependency jobs.',
+      'For "triggered_by" dependency jobs, omit schedule or pass null — the server sets it to null automatically.',
+    ].join(' '),
     {
       linux_user: z.string().min(1).describe('Linux user to run the job as'),
-      schedule: z.string().min(1).describe('Cron expression, e.g. "0 3 * * *"'),
+      schedule: z.string().nullable().optional().describe(
+        'Cron expression, e.g. "0 3 * * *". Required for normal and "requires" jobs. Omit or null for "triggered_by" jobs.'
+      ),
       command: z.string().min(1).describe('Command to execute'),
       targets: z.array(z.string()).min(1).describe('Execution target(s), e.g. ["local"]'),
       tags: z.array(z.string()).optional().describe('Tag names to assign'),
