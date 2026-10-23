@@ -8,6 +8,8 @@ Wenn mehrere Cronmanager-Agenten konfiguriert sind (verschiedene Server/Umgebung
 
 `list_agents` gibt pro Agent folgende Felder zurück: `id`, `name`, `description`, `enabled`, `web_url` (öffentliche URL des Web-Containers, identisch für alle Agenten, `null` wenn nicht konfiguriert).
 
+**Wichtig bei schreibenden Operationen:** Wenn mehrere Agenten konfiguriert sind und aus dem Auftrag oder dem bisherigen Gesprächskontext nicht eindeutig hervorgeht, auf welchem Agenten ein Job angelegt, geändert oder gelöscht werden soll — **immer zuerst nachfragen**, bevor die Aktion ausgeführt wird. Job-IDs sind nur pro Agent eindeutig; eine Verwechslung ist im Nachhinein schwer zu erkennen.
+
 ## Verfügbare Tools
 
 ### Agenten
